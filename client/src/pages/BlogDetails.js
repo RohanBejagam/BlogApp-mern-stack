@@ -1,18 +1,41 @@
-import React, { useState } from "react";
-import { Box, Button, InputLabel, TextField, Typography } from "@mui/material";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { Box, Button, InputLabel, TextField, Typography } from "@mui/material";
 import toast from "react-hot-toast";
 
-const CreateBlog = () => {
-  //navigate
+const BlogDetails = () => {
+  const [inputs, setInputs] = useState({});
+  const [blog, setBlog] = useState({});
+  const id = useParams().id;
   const navigate = useNavigate();
 
-  const [inputs, setInputs] = useState({
-    title: "",
-    description: "",
-    image: "",
-  });
+  //get blog details
+  const getBlogDetail = async () => {
+    try {
+      const instance = axios.create({
+        baseURL: "http://localhost:8080",
+      });
+      const { data } = await instance.get(`/api/v1/blog/get-blog/${id}`);
+      if (data?.success) {
+        setBlog(data.blog);
+        setInputs({
+          title: data.blog?.title,
+          description: data.blog?.description,
+          image: data.blog?.image,
+        });
+      } else {
+        toast.error(data?.message);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getBlogDetail();
+  }, [id]);
+  console.log(blog);
 
   //input change
   const handleChange = (e) => {
@@ -28,23 +51,21 @@ const CreateBlog = () => {
       const instance = axios.create({
         baseURL: "http://localhost:8080",
       });
-      const { data } = await instance.post("/api/v1/blog/create-blog", {
+      const { data } = await instance.put(`/api/v1/blog/update-blog/${id}`, {
         title: inputs.title,
         description: inputs.description,
         image: inputs.image,
         user: localStorage.userId,
       });
       if (data?.success) {
-        toast.success("Blog Created");
+        toast.promise("Blog Updated");
         navigate("/my-blogs");
-      } else {
-        toast.error(data?.message);
       }
     } catch (error) {
       console.log(error);
       toast.error(error.response.data?.message);
     }
-    // console.log(inputs);
+    console.log(inputs);
   };
   return (
     <>
@@ -67,7 +88,7 @@ const CreateBlog = () => {
             padding={3}
             color={"gray"}
           >
-            Create a Post
+            Modify the Post
           </Typography>
 
           <InputLabel
@@ -112,8 +133,8 @@ const CreateBlog = () => {
             required
           ></TextField>
 
-          <Button type="submit" color="primary" variant="contained">
-            Submit
+          <Button type="submit" color="warning" variant="contained">
+            Update
           </Button>
         </Box>
       </form>
@@ -121,4 +142,4 @@ const CreateBlog = () => {
   );
 };
 
-export default CreateBlog;
+export default BlogDetails;
